@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mátrix Futam - Pro</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root { --primary: #00ff88; --bg: #121212; --surface: #1e1e1e; --text: #ffffff; --accent: #292929; --error: #ff4444; --warning: #ffaa00; }
+        body { margin: 0; padding: 0; font-family: sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; overscroll-behavior: none; }
+        .app-container { width: 100%; max-width: 500px; min-height: 100vh; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; }
+        header h1 { text-align: center; color: var(--primary); font-size: 1.4rem; margin: 5px 0; text-transform: uppercase; }
+        .timer-section { background: var(--surface); padding: 15px; border-radius: 20px; text-align: center; margin-bottom: 15px; border: 1px solid var(--accent); }
+        #stopper-kijelzo { font-family: monospace; font-size: 2.2rem; font-weight: bold; color: var(--primary); margin-bottom: 5px; }
+        #uzenet { font-size: 1.1rem; min-height: 3.5em; color: #ccc; line-height: 1.4; }
+        .scanner-section { flex-grow: 1; background: #000; border-radius: 20px; overflow: hidden; border: 2px solid var(--accent); position: relative; min-height: 250px; }
+        #olvaso-terulet { width: 100% !important; }
+        .controls { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        button { padding: 14px; border-radius: 12px; font-weight: bold; text-transform: uppercase; cursor: pointer; border: none; font-size: 0.85rem; transition: 0.2s; }
+        #save-btn { background: var(--primary); color: #000; display: none; }
+        #abort-btn { background: var(--error); color: #fff; display: none; }
+        #reset-btn { background: #444; color: #fff; display: none; }
+        .btn-exit { background: #222; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header><h1>Mátrix Futam</h1></header>
+    <div class="timer-section">
+        <div id="stopper-kijelzo">00:00.0</div>
+        <p id="uzenet">Válassz pályát!<br><small>Olvasd be a pálya kódját!</small></p>
+    </div>
+    <div class="scanner-section"><div id="olvaso-terulet"></div></div>
+    <div class="controls">
+        <button id="save-btn">Eredmény Mentése</button>
+        <button id="reset-btn">Új pálya / Reset</button>
+        <button id="abort-btn">Futam Feladása</button>
+        <button class="btn-exit" onclick="kilepes()">Kilépés</button>
+    </div>
+</div>
+
+<script>
+    const kijelzo = document.getElementById('stopper-kijelzo');
+    const uzenet = document.getElementById('uzenet');
+    const saveBtn = document.getElementById('save-btn');
+    const abortBtn = document.getElementById('abort-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const html5QrCode = new Html5Qrcode("olvaso-terulet");
+
+    let stopperFut = false, palyaKesz = false, kezdIdo, intervallum;
+    let sorrend = [], sorrendIndex = 0, utolsoKod = "", utolsoIdo = 0;
+
+    const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+    function kameraIndit() {
+        html5QrCode.start({ facingMode: "environment" }, qrConfig, onScanSuccess);
+    }
+
+    function kilepes() {
+        if (confirm("Bezárja az alkalmazást?")) window.close();
+    }
+
+    function frissit() {
+        const eltelt = Date.now() - kezdIdo;
+        const p = Math.floor(eltelt / 60000);
+        const m = Math.floor((eltelt % 60000) / 1000);
+        const tized = Math.floor((eltelt % 1000) / 100);
+        kijelzo.textContent = `${String(p).padStart(2,'0')}:${String(m).padStart(2,'0')}.${tized}`;
+    }
+
+    async function onScanSuccess(decodedText) {
+        const most = Date.now();
+        const szoveg = decodedText.toLowerCase().trim();
+        if (szoveg === utolsoKod && (most - utolsoIdo < 2000)) return;
+        utolsoKod = szoveg; utolsoIdo = most;
+
+        // 1. PÁLYAVÁLASZTÁS (Még nem indul a stopper)
+        if (szoveg.startsWith('start:') && !palyaKesz && !stopperFut) {
+            const adatok = szoveg.replace('start:', '').split(',').map(s => s.trim()).filter(s => s !== "");
+            if (adatok.length > 0) {
+                sorrend = adatok;
+                palyaKesz = true;
+                uzenet.innerHTML = `<b style="color:var(--warning)">PÁLYA BETÖLTVE:</b> ${sorrend.join(', ')}<br>Bejelentkezéshez olvasd be: <b style="color:var(--primary)">START</b>`;
+                if (navigator.vibrate) navigator.vibrate(100);
+            }
+            return;
+        }
+
+        // 2. TÉNYLEGES RAJT (Csak ha van választott pálya)
+        if (szoveg === 'start' && palyaKesz && !stopperFut) {
+            kezdIdo = Date.now();
+            stopperFut = true;
+            sorrendIndex = 0;
+            intervallum = setInterval(frissit, 100);
+            uzenet.innerHTML = `<b style="color:var(--primary)">FUTAM INDUL!</b><br>Keresd: <b>${sorrend[0]}</b>`;
+            abortBtn.style.display = "block";
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            return;
+        }
+
+        if (stopperFut) {
+            // 3. ELLENŐRZŐ PONTOK
+            if (szoveg === sorrend[sorrendIndex]) {
+                sorrendIndex++;
+                if (navigator.vibrate) navigator.vibrate(50);
+                if (sorrendIndex === sorrend.length) {
+                    uzenet.innerHTML = "<b>Minden pont megvan!</b><br>Irány a <b style='color:var(--primary)'>STOP (Cél)</b>!";
+                } else {
+                    uzenet.innerHTML = `Pont megvan: ${szoveg}<br>Következő: <b style='color:var(--primary)'>${sorrend[sorrendIndex]}</b>`;
+                }
+            } 
+            // 4. CÉL (STOP)
+            else if (szoveg === 'stop') {
+                if (sorrendIndex === sorrend.length) {
+                    stopperFut = false;
+                    clearInterval(intervallum);
+                    uzenet.innerHTML = "<b style='color:var(--primary)'>CÉLBA ÉRTÉL!</b><br>Gratulálunk!";
+                    saveBtn.style.display = "block";
+                    resetBtn.style.display = "block";
+                    abortBtn.style.display = "none";
+                    html5QrCode.stop();
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                } else {
+                    uzenet.innerHTML = `<b style='color:var(--error)'>HIÁNYZÓ PONTOK!</b><br>Kell még: ${sorrend.slice(sorrendIndex).join(', ')}`;
+                }
+            }
+        }
+    }
+
+    // Reset funkció (Új pálya kezdése)
+    function resetPalyazat() {
+        clearInterval(intervallum);
+        stopperFut = false;
+        palyaKesz = false;
+        sorrend = [];
+        sorrendIndex = 0;
+        utolsoKod = "";
+        kijelzo.textContent = "00:00.0";
+        uzenet.innerHTML = "Válassz pályát!<br><small>Olvasd be a pálya kódját (start:pályanév)!</small>";
+        saveBtn.style.display = "none";
+        abortBtn.style.display = "none";
+        resetBtn.style.display = "none";
+        
+        // Ha le volt állítva a kamera (célba éréskor), indítsuk újra
+        if (html5QrCode.getState() !== 2) { 
+            kameraIndit();
+        }
+    }
+
+    abortBtn.addEventListener('click', () => {
+        if (confirm("Feladod a versenyt?")) resetPalyazat();
+    });
+
+    resetBtn.addEventListener('click', resetPalyazat);
+
+    saveBtn.addEventListener('click', () => {
+        const nev = prompt("Neved a ranglistához:", "Versenyző");
+        if (!nev) return;
+        const tartalom = `MÁTRIX FUTAM\nNév: ${nev}\nIdő: ${kijelzo.textContent}\nPálya: ${sorrend.join('->')}`;
+        const blob = new Blob([tartalom], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `futam_${nev}.txt`;
+        a.click();
+        alert("Eredmény mentve!");
+    });
+
+    document.addEventListener('DOMContentLoaded', kameraIndit);
+</script>
+
+</body>
+</html>
