@@ -107,7 +107,7 @@
         if (szoveg.startsWith('start:') && !stopperFut && !palyaKesz) {
             sorrend = szoveg.replace('start:', '').split(',').map(s => s.trim());
             palyaKesz = true;
-            uzenet.innerHTML = `Pálya betöltve: <b>${sorrend.length} pont</b><br>Bejelentkezés: <b style="color:var(--primary)">START</b>`;
+            uzenet.innerHTML = `Pálya betöltve: <b>${sorrend.length} pont</b><br>Indításhoz ezt a kódot olvasd be: <b style="color:var(--primary)">START</b>`;
             hangjelzes('ok'); vizualisJelzes('ok');
         }
         else if (szoveg === 'start' && palyaKesz && !stopperFut) {
