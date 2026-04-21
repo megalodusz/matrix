@@ -173,7 +173,7 @@
         a.href = URL.createObjectURL(b); a.download = `eredmeny_${nev}.txt`; a.click();
     });
 
-    html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, onScanSuccess);
+    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess);
 </script>
 </body>
 </html>
