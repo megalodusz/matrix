@@ -113,14 +113,14 @@
         if (szoveg.startsWith('start:') && !stopperFut && !palyaKesz) {
             sorrend = szoveg.replace('start:', '').split(',').map(s => s.trim());
             palyaKesz = true;
-            uzenet.innerHTML = `Pálya betöltve: <b>${sorrend.length} pont</b><br>Indításhoz ezt a kódot olvasd be: <b style="color:var(--primary)">START</b>`;
+            uzenet.innerHTML = `Pálya betöltve: <b>${sorrend.length} pont</b><br>Indításhoz ezt a kódot olvasd be: <b style="color:var(--primary)">Rajt</b>`;
             hangjelzes('ok'); vizualisJelzes('ok');
         }
         else if (szoveg === 'start' && palyaKesz && !stopperFut) {
             kezdIdo = Date.now(); stopperFut = true; sorrendIndex = 0;
             log = [{ pont: "RAJT", ido: "00:00.0" }];
             intervallum = setInterval(frissit, 100);
-            uzenet.innerHTML = `FUTAM INDULT!<br>Keresd: <b>${sorrend[0]}</b>`;
+            uzenet.innerHTML = `A FUTAM ELINDULT!<br>Keresd: <b>${sorrend[0]}</b>`;
             hangjelzes('start'); vizualisJelzes('ok');
         }
         else if (stopperFut) {
@@ -128,7 +128,7 @@
                 log.push({ pont: szoveg, ido: kijelzo.textContent });
                 sorrendIndex++;
                 vizualisJelzes('ok'); hangjelzes('ok');
-                if (sorrendIndex === sorrend.length) uzenet.innerHTML = `Irány a <b style="color:var(--primary)">STOP</b>!`;
+                if (sorrendIndex === sorrend.length) uzenet.innerHTML = `Irány a <b style="color:var(--primary)">CÉL</b>!`;
                 else uzenet.innerHTML = `PONT: ${szoveg}<br>Következő: <b>${sorrend[sorrendIndex]}</b>`;
             } 
             else if (szoveg === 'stop') {
