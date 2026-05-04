@@ -164,19 +164,19 @@
         const p = Math.floor(eltelt / 60000);
         const m = Math.floor((eltelt % 60000) / 1000);
         const tized = Math.floor((eltelt % 1000) / 100);
-        kijelzo.textContent = `${String(p).padStart(2,'0')}:${String(m).padStart(2,'0')}.${tized}`; scannerContainer.style.display = "block";
+        kijelzo.textContent = `${String(p).padStart(2,'0')}:${String(m).padStart(2,'0')}.${tized}`;
         
     }
 
     function feladasKerdes() {
         if(confirm("Biztosan feladod a futamot és törlöd a jelenlegi pályát?")) {
-            location.reload(); scannerBox.classList.remove('scanner-hidden');
+            location.reload(); 
         }
     }
 
     function kilepes() { if(confirm("Kilépsz?")) window.close(); }
 
-    resetBtn.addEventListener('click', () => { location.reload(); scannerBox.classList.remove('scanner-hidden'); }); 
+    resetBtn.addEventListener('click', () => { location.reload(); }); 
 
     saveBtn.addEventListener('click', () => {
         const nev = prompt("Név:");
