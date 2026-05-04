@@ -131,6 +131,16 @@
             intervallum = setInterval(frissit, 100);
             uzenet.innerHTML = `A FUTAM ELINDULT!<br>Keresd: <b>${sorrend[0]}</b>`;
             hangjelzes('start'); vizualisJelzes('ok');
+
+            
+            let wakeLock = null;
+async function tartsdEbren() {
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+    } catch (err) { console.log("Ébrentartás nem támogatott"); }
+}
+
+            
         }
         else if (stopperFut) {
             if (szoveg === sorrend[sorrendIndex]) {
