@@ -63,11 +63,7 @@
     <div class="scanner-section">
         <div id="olvaso-terulet"></div>
     </div>
-
-    <div id="scanner-container" class="scanner-section">
-    <div id="olvaso-terulet"></div>
-    </div>
-    
+   
     <div class="controls">
         <button id="save-btn">🏆 Eredmény Mentése</button>
         <button id="reset-btn">🔄 Új pálya választása</button>
@@ -84,8 +80,7 @@
     const resetBtn = document.getElementById('reset-btn');
     const abortBtn = document.getElementById('abort-btn');
     const html5QrCode = new Html5Qrcode("olvaso-terulet");
-    const scannerContainer = document.querySelector('.scanner-section');
-
+    
     let stopperFut = false, palyaKesz = false;
     let kezdIdo, intervallum, sorrend = [], sorrendIndex = 0;
     let utolsoKod = "", utolsoIdo = 0, log = [];
@@ -141,8 +136,9 @@
                     clearInterval(intervallum); stopperFut = false;
                     log.push({ pont: "STOP", ido: kijelzo.textContent });
                     uzenet.innerHTML = `<b style="color:var(--primary)">CÉLBA ÉRTÉL!</b><br>Idő: ${kijelzo.textContent}`;
-                    saveBtn.style.display = "block"; resetBtn.style.display = "block"; scannerContainer.style.display = "none";
+                    saveBtn.style.display = "block"; resetBtn.style.display = "block"; 
                     html5QrCode.stop(); hangjelzes('start');
+                    document.querySelector('.scanner-section').classList.add('scanner-hidden');
                 } else {
                     uzenet.innerHTML = `<b style='color:var(--error)'>HIÁNYZÓ PONTOK!</b><br>Kell még: ${sorrend.slice(sorrendIndex).join(',')}`;
                     hangjelzes('hiba'); vizualisJelzes('hiba');
