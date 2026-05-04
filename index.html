@@ -2,178 +2,108 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Mátrix Futam - Pro v3</title>
-    <link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
-</script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mátrix Futam v3</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #00ff88; --bg: #121212; --surface: #1e1e1e; --text: #ffffff; --accent: #292929; --error: #ff4444; --warning: #ffaa00; }
-        
-        /* Görgetés engedélyezése */
-        body { 
-            margin: 0; padding: 0; font-family: sans-serif; 
-            background-color: var(--bg); color: var(--text); 
-            display: flex; justify-content: center; 
-            overflow-y: auto; /* Görgethető függőlegesen */
-        }
+        :root { --primary: #00ff88; --bg: #121212; --surface: #1e1e1e; --text: #fff; --error: #ff4444; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 500px; padding: 15px; box-sizing: border-box; }
         
         #flash-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; opacity: 0; transition: opacity 0.1s; }
-        .flash-success { background-color: rgba(0, 255, 136, 0.4); opacity: 1 !important; }
-        .flash-error { background-color: rgba(255, 68, 68, 0.4); opacity: 1 !important; }
+        .flash-success { background: rgba(0, 255, 136, 0.4); opacity: 1 !important; }
+        .flash-error { background: rgba(255, 68, 68, 0.4); opacity: 1 !important; }
 
-        .app-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; min-height: 100vh; }
+        header h1 { text-align: center; color: var(--primary); font-size: 1.2rem; margin: 10px 0; }
+        .timer-section { background: var(--surface); padding: 10px; border-radius: 15px; text-align: center; margin-bottom: 15px; border: 1px solid #333; }
         
-        /* Fejléc fixálása */
-        header { position: sticky; top: 0; background: var(--bg); z-index: 50; padding: 10px 0; border-bottom: 1px solid var(--accent); }
-        header h1 { text-align: center; color: var(--primary); font-size: 1.4rem; margin: 0; text-transform: uppercase; }
+        /* Kisebb betűméret itt */
+        #stopper-kijelzo { font-family: monospace; font-size: 1.8rem; font-weight: bold; color: var(--primary); }
+        #uzenet { font-size: 0.95rem; margin-top: 5px; min-height: 3em; }
 
-        .timer-section { background: var(--surface); padding: 15px; border-radius: 20px; text-align: center; margin: 15px 0; border: 1px solid var(--accent); }
-        #stopper-kijelzo { font-family: monospace; font-size: 2.5rem; font-weight: bold; color: var(--primary); }
-        #uzenet { font-size: 1.1rem; min-height: 3.5em; margin-top: 10px; }
+        .scanner-section { background: #000; border-radius: 15px; overflow: hidden; border: 2px solid #333; min-height: 250px; }
+        .controls { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
         
-        .scanner-section { background: #000; border-radius: 20px; overflow: hidden; border: 2px solid var(--accent); position: relative; min-height: 300px; }
-        #olvaso-terulet { width: 100% !important; }
-        
-        .controls { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
-        button { padding: 16px; border-radius: 12px; font-weight: bold; text-transform: uppercase; border: none; cursor: pointer; font-size: 0.9rem; }
-        
+        button { padding: 14px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer; font-size: 0.85rem; text-transform: uppercase; }
         #save-btn { background: var(--primary); color: #000; display: none; }
         #reset-btn { background: #444; color: #fff; display: none; }
-        #abort-btn { background: var(--error); color: #fff; } /* Mindig látható, ha be van töltve pálya */
-        .btn-exit { background: transparent; color: #666; text-decoration: underline; font-size: 0.8rem; margin-top: 10px; }
+        #abort-btn { background: var(--error); color: #fff; }
+        .btn-exit { background: transparent; color: #666; text-decoration: underline; font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
 <div id="flash-overlay"></div>
-
 <div class="app-container">
     <header><h1>Mátrix Futam v3</h1></header>
-    
     <div class="timer-section">
         <div id="stopper-kijelzo">00:00.0</div>
         <p id="uzenet">Olvasd be a pálya kódját!</p>
     </div>
-
-    <div class="scanner-section">
-        <div id="olvaso-terulet"></div>
-    </div>
-
+    <div class="scanner-section"><div id="olvaso-terulet"></div></div>
     <div class="controls">
         <button id="save-btn">🏆 Eredmény Mentése</button>
-        <button id="reset-btn">🔄 Új pálya választása</button>
-        <button id="abort-btn" onclick="feladasKerdes()">❌ Futam Feladása</button>
-        <button class="btn-exit" onclick="kilepes()">Kilépés az alkalmazásból</button>
+        <button id="reset-btn" onclick="location.reload()">🔄 Új pálya</button>
+        <button id="abort-btn" onclick="confirm('Feladod?') && location.reload()">❌ Feladás</button>
+        <button class="btn-exit" onclick="window.close()">Kilépés</button>
     </div>
 </div>
 
 <script>
-    const kijelzo = document.getElementById('stopper-kijelzo');
-    const uzenet = document.getElementById('uzenet');
-    const flash = document.getElementById('flash-overlay');
-    const saveBtn = document.getElementById('save-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    const abortBtn = document.getElementById('abort-btn');
+    const kijelzo = document.getElementById('stopper-kijelzo'), uzenet = document.getElementById('uzenet'), flash = document.getElementById('flash-overlay');
+    const saveBtn = document.getElementById('save-btn'), resetBtn = document.getElementById('reset-btn');
     const html5QrCode = new Html5Qrcode("olvaso-terulet");
+    let running = false, ready = false, startT, timer, track = [], idx = 0, lastQr = "", lastT = 0;
 
-    let stopperFut = false, palyaKesz = false;
-    let kezdIdo, intervallum, sorrend = [], sorrendIndex = 0;
-    let utolsoKod = "", utolsoIdo = 0, log = [];
+    const beep = (f) => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.frequency.value = f; g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start(); osc.stop(ctx.currentTime + 0.3);
+    };
 
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ui = (type) => {
+        flash.className = type === 'ok' ? 'flash-success' : 'flash-error';
+        setTimeout(() => flash.className = '', 150);
+        beep(type === 'ok' ? 880 : 220);
+    };
 
-    function hangjelzes(tipus) {
-        try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            if (tipus === 'ok') { osc.frequency.setValueAtTime(880, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2); }
-            else if (tipus === 'start') { osc.frequency.setValueAtTime(440, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3); }
-            else { osc.frequency.setValueAtTime(220, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); }
-            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
-        } catch(e) {}
+    function update() {
+        const diff = Date.now() - startT;
+        const m = Math.floor(diff / 60000), s = Math.floor((diff % 60000) / 1000), t = Math.floor((diff % 1000) / 100);
+        kijelzo.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${t}`;
     }
 
-    function vizualisJelzes(tipus) {
-        flash.className = tipus === 'ok' ? 'flash-success' : 'flash-error';
-        setTimeout(() => { flash.className = ''; }, 150);
-    }
+    async function onScan(text) {
+        const now = Date.now();
+        const code = text.toLowerCase().trim();
+        if (code === lastQr && now - lastT < 2000) return;
+        lastQr = code; lastT = now;
 
-    async function onScanSuccess(decodedText) {
-        const most = Date.now();
-        const szoveg = decodedText.toLowerCase().trim();
-        if (szoveg === utolsoKod && (most - utolsoIdo < 2000)) return;
-        utolsoKod = szoveg; utolsoIdo = most;
-
-        if (szoveg.startsWith('start:') && !stopperFut && !palyaKesz) {
-            sorrend = szoveg.replace('start:', '').split(',').map(s => s.trim());
-            palyaKesz = true;
-            uzenet.innerHTML = `Pálya betöltve: <b>${sorrend.length} pont</b><br>Indításhoz ezt a kódot olvasd be: <b style="color:var(--primary)">Rajt</b>`;
-            hangjelzes('ok'); vizualisJelzes('ok');
-        }
-        else if (szoveg === 'start' && palyaKesz && !stopperFut) {
-            kezdIdo = Date.now(); stopperFut = true; sorrendIndex = 0;
-            log = [{ pont: "RAJT", ido: "00:00.0" }];
-            intervallum = setInterval(frissit, 100);
-            uzenet.innerHTML = `A FUTAM ELINDULT!<br>Keresd: <b>${sorrend[0]}</b>`;
-            hangjelzes('start'); vizualisJelzes('ok');
-        }
-        else if (stopperFut) {
-            if (szoveg === sorrend[sorrendIndex]) {
-                log.push({ pont: szoveg, ido: kijelzo.textContent });
-                sorrendIndex++;
-                vizualisJelzes('ok'); hangjelzes('ok');
-                if (sorrendIndex === sorrend.length) uzenet.innerHTML = `Irány a <b style="color:var(--primary)">CÉL</b>!`;
-                else uzenet.innerHTML = `PONT: ${szoveg}<br>Következő: <b>${sorrend[sorrendIndex]}</b>`;
-            } 
-            else if (szoveg === 'stop') {
-                if (sorrendIndex === sorrend.length) {
-                    clearInterval(intervallum); stopperFut = false;
-                    log.push({ pont: "STOP", ido: kijelzo.textContent });
-                    uzenet.innerHTML = `<b style="color:var(--primary)">CÉLBA ÉRTÉL!</b><br>Idő: ${kijelzo.textContent}`;
+        if (code.startsWith('start:') && !running && !ready) {
+            track = code.replace('start:', '').split(',').map(s => s.trim());
+            ready = true; uzenet.innerHTML = `Pálya: ${track.length} pont. <br>Olvasd be a <b>Rajt</b>-ot!`; ui('ok');
+        } else if (code === 'start' && ready && !running) {
+            startT = Date.now(); running = true; idx = 0;
+            timer = setInterval(update, 100);
+            uzenet.innerHTML = `FUTAM! <br>Következő: <b>${track[0]}</b>`; ui('ok');
+        } else if (running) {
+            if (code === track[idx]) {
+                idx++; ui('ok');
+                uzenet.innerHTML = idx === track.length ? "Irány a <b>CÉL</b>!" : `Következő: <b>${track[idx]}</b>`;
+            } else if (code === 'stop') {
+                if (idx === track.length) {
+                    clearInterval(timer); running = false;
+                    uzenet.innerHTML = "CÉLBA ÉRTÉL!";
                     saveBtn.style.display = "block"; resetBtn.style.display = "block";
-                    html5QrCode.stop(); hangjelzes('start');
-                } else {
-                    uzenet.innerHTML = `<b style='color:var(--error)'>HIÁNYZÓ PONTOK!</b><br>Kell még: ${sorrend.slice(sorrendIndex).join(',')}`;
-                    hangjelzes('hiba'); vizualisJelzes('hiba');
-                }
-            } else { hangjelzes('hiba'); vizualisJelzes('hiba'); }
+                    html5QrCode.stop(); ui('ok');
+                } else { uzenet.innerHTML = "HIÁNYZÓ PONTOK!"; ui('err'); }
+            } else ui('err');
         }
     }
 
-    function frissit() {
-        const eltelt = Date.now() - kezdIdo;
-        const p = Math.floor(eltelt / 60000);
-        const m = Math.floor((eltelt % 60000) / 1000);
-        const tized = Math.floor((eltelt % 1000) / 100);
-        kijelzo.textContent = `${String(p).padStart(2,'0')}:${String(m).padStart(2,'0')}.${tized}`;
-    }
-
-    function feladasKerdes() {
-        if(confirm("Biztosan feladod a futamot és törlöd a jelenlegi pályát?")) {
-            location.reload();
-        }
-    }
-
-    function kilepes() { if(confirm("Kilépsz?")) window.close(); }
-
-    resetBtn.addEventListener('click', () => { location.reload(); });
-
-    saveBtn.addEventListener('click', () => {
-        const nev = prompt("Név:");
-        if (!nev) return;
-        let r = `--- MÁTRIX FUTAM ---\nNév: ${nev}\nÖsszidő: ${kijelzo.textContent}\n\nNapló:\n` + log.map(l => `${l.pont}: ${l.ido}`).join('\n');
-        const b = new Blob([r], {type:'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b); a.download = `eredmeny_${nev}.txt`; a.click();
-    });
-
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess);
+    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScan);
 </script>
 </body>
 </html>
