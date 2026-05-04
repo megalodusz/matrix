@@ -133,14 +133,6 @@
             hangjelzes('start'); vizualisJelzes('ok');
 
             
-            let wakeLock = null;
-async function tartsdEbren() {
-    try {
-        wakeLock = await navigator.wakeLock.request('screen');
-    } catch (err) { console.log("Ébrentartás nem támogatott"); }
-}
-
-            
         }
         else if (stopperFut) {
             if (szoveg === sorrend[sorrendIndex]) {
