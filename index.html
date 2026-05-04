@@ -156,7 +156,7 @@
         const p = Math.floor(eltelt / 60000);
         const m = Math.floor((eltelt % 60000) / 1000);
         const tized = Math.floor((eltelt % 1000) / 100);
-        kijelzo.textContent = `${String(p).padStart(2,'0')}:${String(m).padStart(2,'0')}.${tized}`;
+        kijelzo.textContent = `${String(p).padStart(2,'0')}:${String(m).padStart(2,'0')}.${tized}`; scannerContainer.style.display = "block";
     }
 
     function feladasKerdes() {
