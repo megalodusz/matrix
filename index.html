@@ -147,7 +147,10 @@
                     uzenet.innerHTML = `<b style="color:var(--primary)">CÉLBA ÉRTÉL!</b><br>Idő: ${kijelzo.textContent}`;
                     saveBtn.style.display = "block"; resetBtn.style.display = "block"; 
                     html5QrCode.stop(); hangjelzes('start');
-                    document.querySelector('.scanner-section').classList.add('scanner-hidden');
+                    
+                    const scannerBox = document.querySelector('.scanner-section');
+        scannerBox.classList.add('scanner-hidden');
+                    
                 } else {
                     uzenet.innerHTML = `<b style='color:var(--error)'>HIÁNYZÓ PONTOK!</b><br>Kell még: ${sorrend.slice(sorrendIndex).join(',')}`;
                     hangjelzes('hiba'); vizualisJelzes('hiba');
