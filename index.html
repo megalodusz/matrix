@@ -113,7 +113,7 @@
         if (szoveg.startsWith('start:') && !stopperFut && !palyaKesz) {
             sorrend = szoveg.replace('start:', '').split(',').map(s => s.trim());
             palyaKesz = true;
-            uzenet.innerHTML = `Pálya betöltve: <b>${sorrend.length} pont</b><br>Indításhoz olvasd be: <b style="color:var(--primary)">a RAJT kódot</b>`;
+            uzenet.innerHTML = `Pálya betöltve: <b>${sorrend.length} pont</b><br>Indításhoz olvasd be a: <b style="color:var(--primary)">RAJT </b>kódot`;
             hangjelzes('ok'); vizualisJelzes('ok');
         }
         else if (szoveg === 'start' && palyaKesz && !stopperFut) {
@@ -129,7 +129,7 @@
                 sorrendIndex++;
                 vizualisJelzes('ok'); hangjelzes('ok');
                 if (sorrendIndex === sorrend.length) uzenet.innerHTML = `Irány a <b style="color:var(--primary)">CÉL</b>!`;
-                else uzenet.innerHTML = `Megvan: ${szoveg}<br>A következő: <b>${sorrend[sorrendIndex]}</b>`;
+                else uzenet.innerHTML = `Megvan:<b style="color:var(--primary)"> ${szoveg} </b><br>A következő pontod a: <b>${sorrend[sorrendIndex]}</b>`;
             } 
             else if (szoveg === 'stop') {
                 if (sorrendIndex === sorrend.length) {
