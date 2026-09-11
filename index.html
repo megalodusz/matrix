@@ -43,7 +43,7 @@
         #stopper-kijelzo { font-family: monospace; font-size: 2.0rem; font-weight: bold; color: var(--primary); }
         #uzenet { font-size: 1.0rem; min-height: 3.0em; margin-top: 10px; }
         
-        .scanner-section { background: #000; border-radius: 20px; overflow: hidden; border: 2px solid var(--accent); position: relative; min-height: 300px; transition: all 0.3s ease; }
+        .scanner-section { background: #000; border-radius: 20px; overflow: hidden; border: 2px solid var(--accent); position: relative; min-height: 300px; }
         #olvaso-terulet { width: 100% !important; }
         
         .controls { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
@@ -86,13 +86,11 @@
     const saveBtn = document.getElementById('save-btn');
     const resetBtn = document.getElementById('reset-btn');
     const abortBtn = document.getElementById('abort-btn');
-    const scannerSection = document.querySelector('.scanner-section');
     const html5QrCode = new Html5Qrcode("olvaso-terulet");
     
     let stopperFut = false, palyaKesz = false;
     let kezdIdo, intervallum, sorrend = [], sorrendIndex = 0;
     let utolsoKod = "", utolsoIdo = 0, log = [];
-    let qrKeresoFut = false;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -113,30 +111,6 @@
         setTimeout(() => { flash.className = ''; }, 150);
     }
 
-    async function inditQR() {
-        if (!qrKeresoFut) {
-            try {
-                scannerSection.classList.remove('scanner-hidden');
-                await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess);
-                qrKeresoFut = true;
-            } catch (err) {
-                console.error("Kamera indítási hiba:", err);
-            }
-        }
-    }
-
-    async function leallitQR() {
-        if (qrKeresoFut) {
-            try {
-                await html5QrCode.stop();
-                qrKeresoFut = false;
-                scannerSection.classList.add('scanner-hidden');
-            } catch (err) {
-                console.error("Kamera leállítási hiba:", err);
-            }
-        }
-    }
-
     async function onScanSuccess(decodedText) {
         const most = Date.now();
         const szoveg = decodedText.toLowerCase().trim();
@@ -153,7 +127,7 @@
             kezdIdo = Date.now(); stopperFut = true; sorrendIndex = 0;
             log = [{ pont: "RAJT", ido: "00:00.0" }];
             intervallum = setInterval(frissit, 100);
-            uzenet.innerHTML = `A FUTAM ELINDULT!<br>Keresd: <b>${sorrend}</b>`;
+            uzenet.innerHTML = `A FUTAM ELINDULT!<br>Keresd: <b>${sorrend[0]}</b>`;
             hangjelzes('start'); vizualisJelzes('ok');
         }
         else if (stopperFut) {
@@ -171,7 +145,11 @@
                     uzenet.innerHTML = `<b style="color:var(--primary)">CÉLBA ÉRTÉL!</b><br>Idő: ${kijelzo.textContent}`;
                     saveBtn.style.display = "block"; resetBtn.style.display = "block"; 
                     hangjelzes('start');
-                    await leallitQR();
+                    
+                    const scannerBox = document.querySelector('.scanner-section');
+                    scannerBox.classList.add('scanner-hidden');
+                    try { await html5QrCode.stop(); } catch(e) {}
+                    
                 } else {
                     uzenet.innerHTML = `<b style='color:var(--error)'>HIÁNYZÓ PONTOK!</b><br>Kell még: ${sorrend.slice(sorrendIndex).join(',')}`;
                     hangjelzes('hiba'); vizualisJelzes('hiba');
@@ -188,7 +166,7 @@
         kijelzo.textContent = `${String(p).padStart(2,'0')}:${String(m).padStart(2,'0')}.${tized}`;
     }
 
-    function tisztaReset() {
+    async function szoftveresReset() {
         clearInterval(intervallum);
         stopperFut = false;
         palyaKesz = false;
@@ -201,18 +179,27 @@
         uzenet.innerHTML = "Olvasd be a pálya kódját!";
         saveBtn.style.display = "none";
         resetBtn.style.display = "none";
-        inditQR();
+        
+        const scannerBox = document.querySelector('.scanner-section');
+        if (scannerBox.classList.contains('scanner-hidden')) {
+            scannerBox.classList.remove('scanner-hidden');
+            try {
+                await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess);
+            } catch(e) {
+                console.error("Kamera újraindítási hiba:", e);
+            }
+        }
     }
 
     function feladasKerdes() {
         if(confirm("Biztosan feladod a futamot és törlöd a jelenlegi pályát?")) {
-            tisztaReset(); 
+            szoftveresReset(); 
         }
     }
 
     function kilepes() { if(confirm("Kilépsz?")) window.close(); }
 
-    resetBtn.addEventListener('click', tisztaReset); 
+    resetBtn.addEventListener('click', szoftveresReset); 
 
     saveBtn.addEventListener('click', () => {
         const nev = prompt("Név:");
@@ -223,7 +210,7 @@
         a.href = URL.createObjectURL(b); a.download = `eredmeny_${nev}.txt`; a.click();
     });
 
-    inditQR();
+    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess);
 </script>
 </body>
 </html>
