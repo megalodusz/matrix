@@ -10,16 +10,15 @@
     navigator.serviceWorker.register('sw.js');
   }
 </script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/html5-code"></script>
     <style>
         :root { --primary: #00ff88; --bg: #121212; --surface: #1e1e1e; --text: #ffffff; --accent: #292929; --error: #ff4444; --warning: #ffaa00; }
         
-        /* Görgetés engedélyezése */
         body { 
             margin: 0; padding: 0; font-family: sans-serif; 
             background-color: var(--bg); color: var(--text); 
             display: flex; justify-content: center; 
-            overflow-y: auto; /* Görgethető függőlegesen */
+            overflow-y: auto;
         }
         
         #flash-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; opacity: 0; transition: opacity 0.1s; }
@@ -29,15 +28,14 @@
         .app-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; min-height: 100vh; }
 
         .scanner-hidden {
-    height: 0 !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    overflow: hidden;
-}
+            height: 0 !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            overflow: hidden;
+        }
         
-        /* Fejléc fixálása */
         header { position: sticky; top: 0; background: var(--bg); z-index: 50; padding: 10px 0; border-bottom: 1px solid var(--accent); }
         header h1 { text-align: center; color: var(--primary); font-size: 1.2rem; margin: 0; text-transform: uppercase; }
 
@@ -45,7 +43,7 @@
         #stopper-kijelzo { font-family: monospace; font-size: 2.0rem; font-weight: bold; color: var(--primary); }
         #uzenet { font-size: 1.0rem; min-height: 3.0em; margin-top: 10px; }
         
-        .scanner-section { background: #000; border-radius: 20px; overflow: hidden; border: 2px solid var(--accent); position: relative; min-height: 300px; }
+        .scanner-section { background: #000; border-radius: 20px; overflow: hidden; border: 2px solid var(--accent); position: relative; min-height: 300px; transition: all 0.3s ease; }
         #olvaso-terulet { width: 100% !important; }
         
         .controls { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
@@ -53,7 +51,7 @@
         
         #save-btn { background: var(--primary); color: #000; display: none; }
         #reset-btn { background: #444; color: #fff; display: none; }
-        #abort-btn { background: var(--error); color: #fff; } /* Mindig látható, ha be van töltve pálya */
+        #abort-btn { background: var(--error); color: #fff; } 
         .btn-exit { background: transparent; color: #666; text-decoration: underline; font-size: 0.85rem; margin-top: 10px; }
     </style>
 </head>
@@ -88,11 +86,13 @@
     const saveBtn = document.getElementById('save-btn');
     const resetBtn = document.getElementById('reset-btn');
     const abortBtn = document.getElementById('abort-btn');
+    const scannerSection = document.querySelector('.scanner-section');
     const html5QrCode = new Html5Qrcode("olvaso-terulet");
     
     let stopperFut = false, palyaKesz = false;
     let kezdIdo, intervallum, sorrend = [], sorrendIndex = 0;
     let utolsoKod = "", utolsoIdo = 0, log = [];
+    let qrKeresoFut = false;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -113,6 +113,30 @@
         setTimeout(() => { flash.className = ''; }, 150);
     }
 
+    async function inditQR() {
+        if (!qrKeresoFut) {
+            try {
+                scannerSection.classList.remove('scanner-hidden');
+                await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess);
+                qrKeresoFut = true;
+            } catch (err) {
+                console.error("Kamera indítási hiba:", err);
+            }
+        }
+    }
+
+    async function leallitQR() {
+        if (qrKeresoFut) {
+            try {
+                await html5QrCode.stop();
+                qrKeresoFut = false;
+                scannerSection.classList.add('scanner-hidden');
+            } catch (err) {
+                console.error("Kamera leállítási hiba:", err);
+            }
+        }
+    }
+
     async function onScanSuccess(decodedText) {
         const most = Date.now();
         const szoveg = decodedText.toLowerCase().trim();
@@ -129,10 +153,8 @@
             kezdIdo = Date.now(); stopperFut = true; sorrendIndex = 0;
             log = [{ pont: "RAJT", ido: "00:00.0" }];
             intervallum = setInterval(frissit, 100);
-            uzenet.innerHTML = `A FUTAM ELINDULT!<br>Keresd: <b>${sorrend[0]}</b>`;
+            uzenet.innerHTML = `A FUTAM ELINDULT!<br>Keresd: <b>${sorrend}</b>`;
             hangjelzes('start'); vizualisJelzes('ok');
-
-            
         }
         else if (stopperFut) {
             if (szoveg === sorrend[sorrendIndex]) {
@@ -148,11 +170,8 @@
                     log.push({ pont: "STOP", ido: kijelzo.textContent });
                     uzenet.innerHTML = `<b style="color:var(--primary)">CÉLBA ÉRTÉL!</b><br>Idő: ${kijelzo.textContent}`;
                     saveBtn.style.display = "block"; resetBtn.style.display = "block"; 
-                    html5QrCode.stop(); hangjelzes('start');
-                    
-                    const scannerBox = document.querySelector('.scanner-section');
-        scannerBox.classList.add('scanner-hidden');
-                    
+                    hangjelzes('start');
+                    await leallitQR();
                 } else {
                     uzenet.innerHTML = `<b style='color:var(--error)'>HIÁNYZÓ PONTOK!</b><br>Kell még: ${sorrend.slice(sorrendIndex).join(',')}`;
                     hangjelzes('hiba'); vizualisJelzes('hiba');
@@ -167,18 +186,33 @@
         const m = Math.floor((eltelt % 60000) / 1000);
         const tized = Math.floor((eltelt % 1000) / 100);
         kijelzo.textContent = `${String(p).padStart(2,'0')}:${String(m).padStart(2,'0')}.${tized}`;
-        
+    }
+
+    function tisztaReset() {
+        clearInterval(intervallum);
+        stopperFut = false;
+        palyaKesz = false;
+        sorrend = [];
+        sorrendIndex = 0;
+        utolsoKod = "";
+        utolsoIdo = 0;
+        log = [];
+        kijelzo.textContent = "00:00.0";
+        uzenet.innerHTML = "Olvasd be a pálya kódját!";
+        saveBtn.style.display = "none";
+        resetBtn.style.display = "none";
+        inditQR();
     }
 
     function feladasKerdes() {
         if(confirm("Biztosan feladod a futamot és törlöd a jelenlegi pályát?")) {
-            location.reload(); 
+            tisztaReset(); 
         }
     }
 
     function kilepes() { if(confirm("Kilépsz?")) window.close(); }
 
-    resetBtn.addEventListener('click', () => { location.reload(); }); 
+    resetBtn.addEventListener('click', tisztaReset); 
 
     saveBtn.addEventListener('click', () => {
         const nev = prompt("Név:");
@@ -189,7 +223,7 @@
         a.href = URL.createObjectURL(b); a.download = `eredmeny_${nev}.txt`; a.click();
     });
 
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess);
+    inditQR();
 </script>
 </body>
 </html>
