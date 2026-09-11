@@ -10,7 +10,7 @@
     navigator.serviceWorker.register('sw.js');
   }
 </script>
-  <script src="https://unpkg.com/html5-code"></script>
+  <script src="https://unpkg.com"></script>
     <style>
         :root { --primary: #00ff88; --bg: #121212; --surface: #1e1e1e; --text: #ffffff; --accent: #292929; --error: #ff4444; --warning: #ffaa00; }
         
@@ -86,8 +86,8 @@
     const saveBtn = document.getElementById('save-btn');
     const resetBtn = document.getElementById('reset-btn');
     const abortBtn = document.getElementById('abort-btn');
-    const html5QrCode = new Html5Qrcode("olvaso-terulet");
     
+    let html5QrCode;
     let stopperFut = false, palyaKesz = false;
     let kezdIdo, intervallum, sorrend = [], sorrendIndex = 0;
     let utolsoKod = "", utolsoIdo = 0, log = [];
@@ -111,6 +111,10 @@
         setTimeout(() => { flash.className = ''; }, 150);
     }
 
+    function onScanFailure(error) {
+        // Csendes hibafigyelés a folyamatos olvasáshoz offline módban is
+    }
+
     async function onScanSuccess(decodedText) {
         const most = Date.now();
         const szoveg = decodedText.toLowerCase().trim();
@@ -127,7 +131,7 @@
             kezdIdo = Date.now(); stopperFut = true; sorrendIndex = 0;
             log = [{ pont: "RAJT", ido: "00:00.0" }];
             intervallum = setInterval(frissit, 100);
-            uzenet.innerHTML = `A FUTAM ELINDULT!<br>Keresd: <b>${sorrend[0]}</b>`;
+            uzenet.innerHTML = `A FUTAM ELINDULT!<br>Keresd: <b>${sorrend}</b>`;
             hangjelzes('start'); vizualisJelzes('ok');
         }
         else if (stopperFut) {
@@ -184,7 +188,7 @@
         if (scannerBox.classList.contains('scanner-hidden')) {
             scannerBox.classList.remove('scanner-hidden');
             try {
-                await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess);
+                await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess, onScanFailure);
             } catch(e) {
                 console.error("Kamera újraindítási hiba:", e);
             }
@@ -210,7 +214,15 @@
         a.href = URL.createObjectURL(b); a.download = `eredmeny_${nev}.txt`; a.click();
     });
 
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess);
+    // Megvárjuk, amíg az összes DOM elem felépül, és csak utána indítjuk el az objektumot és a kamerát
+    document.addEventListener("DOMContentLoaded", () => {
+        html5QrCode = new Html5Qrcode("olvaso-terulet");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, onScanSuccess, onScanFailure)
+        .catch(err => {
+            console.error("Kamera kezdeti indítási hiba:", err);
+            uzenet.innerHTML = "<b style='color:var(--error)'>Kamera hiba!</b> Engedélyezd a kamerahasználatot.";
+        });
+    });
 </script>
 </body>
 </html>
